@@ -1,0 +1,18 @@
+{
+  "UserName": "cfaria",
+  "Programs": [
+    {
+      "Id": 1,
+      "Name": "Shortcut to Shred"
+    },
+    {
+      "Id": 2,
+      "Name": "Insanity"
+    },
+    {
+      "Id": 3,
+      "Name": "The Arnold Blueprint"
+    }
+  ],
+  "Status": "Completed"
+}
