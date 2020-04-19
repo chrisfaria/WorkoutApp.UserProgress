@@ -20,18 +20,18 @@ namespace UserProgress.Service
                 databaseName: "WorkoutApp",
                 collectionName: "UserPrograms",
                 ConnectionStringSetting = "AzureWebJobsStorage")]
-                IAsyncCollector<EnrolledProgramTableEntity> userProgramOut,
+                IAsyncCollector<UserProgramTableEntity> userProgramOut,
             ILogger log)
         {
             log.LogInformation("Create a new user program");
 
             // Read the request body
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            var input = JsonConvert.DeserializeObject<EnrolledProgramCreateModel>(requestBody);
+            var input = JsonConvert.DeserializeObject<UserProgramCreateModel>(requestBody);
 
-            var userprogram = new EnrolledProgramTableEntity()
+            var userprogram = new UserProgramTableEntity()
             {
-                UserNamen = input.UserName,
+                UserName = input.UserName,
                 Programs = input.Programs,
                 Status = input.Status
             };
