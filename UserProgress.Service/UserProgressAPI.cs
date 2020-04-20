@@ -17,10 +17,10 @@ namespace UserProgress.Service
         public static async Task<IActionResult> CreateUserProgram(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "progress/program")] HttpRequest req,
             [CosmosDB(
-                databaseName: "WorkoutApp",
+                databaseName: "UserProgress",
                 collectionName: "UserPrograms",
                 ConnectionStringSetting = "AzureWebJobsStorage")]
-                IAsyncCollector<UserProgramTableEntity> userProgramOut,
+                IAsyncCollector<UserProgram> userProgramOut,
             ILogger log)
         {
             log.LogInformation("Create a new user program");
@@ -29,9 +29,9 @@ namespace UserProgress.Service
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             var input = JsonConvert.DeserializeObject<UserProgramCreateModel>(requestBody);
 
-            var userprogram = new UserProgramTableEntity()
+            var userprogram = new UserProgram()
             {
-                UserName = input.UserName,
+                Username = input.Username,
                 Programs = input.Programs,
                 Status = input.Status
             };
