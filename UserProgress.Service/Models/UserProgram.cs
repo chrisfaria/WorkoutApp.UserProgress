@@ -12,6 +12,9 @@ namespace UserProgress.Service.Models
     /// </summary>
     public class UserProgram
     {
+        [JsonProperty(PropertyName = "id")]
+        public string Id { get; set; }
+
         [JsonProperty(PropertyName = "username")]
         public string Username { get; set; }
 

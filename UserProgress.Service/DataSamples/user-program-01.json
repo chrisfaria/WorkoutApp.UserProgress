@@ -1,18 +1,42 @@
 {
   "username": "cfaria",
-  "programs": [
+  "progId": "kldklfjlkj292jlk3",
+  "progName": "Beefcake 2000",
+  "totalDays": 20,
+  "dayNo": 0,
+  "exercises": [
     {
       "id": 1,
-      "name": "Shortcut to Shred"
+      "name": "Barbell Curl",
+      "muscleGroup": "Biceps",
+      "setCount": 3,
+      "repCount": 8,
+      "lastWeightUsed": 80
     },
     {
-      "id": 2,
-      "name": "Insanity"
+      "id": 1,
+      "name": "Cable Curls",
+      "muscleGroup": "Biceps",
+      "setCount": 4,
+      "repCount": 10,
+      "lastWeightUsed": 165
     },
     {
-      "id": 3,
-      "name": "The Arnold Blueprint"
+      "id": 1,
+      "name": "Decline Dumbell Reverse Curl",
+      "muscleGroup": "Biceps",
+      "setCount": 4,
+      "repCount": 8,
+      "lastWeightUsed": 45
+    },
+    {
+      "id": 1,
+      "name": "Barbell Curl",
+      "muscleGroup": "Biceps",
+      "setCount": 3,
+      "repCount": 8,
+      "lastWeightUsed": 80
     }
-  ],
-  "status": "Completed"
+
+  ]
 }

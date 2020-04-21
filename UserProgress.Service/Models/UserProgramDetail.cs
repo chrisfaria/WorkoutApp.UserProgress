@@ -16,7 +16,10 @@ namespace UserProgress.Service.Models
         public string Username { get; set; }
 
         [JsonProperty(PropertyName = "progId")]
-        public string ProdId { get; set; }
+        public string ProgId { get; set; }
+
+        [JsonProperty(PropertyName = "progName")]
+        public string ProgName { get; set; }
 
         [JsonProperty(PropertyName = "totalDays")]
         public int TotalDays { get; set; }
