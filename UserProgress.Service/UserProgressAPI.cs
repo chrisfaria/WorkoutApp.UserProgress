@@ -39,56 +39,75 @@ namespace UserProgress.Service
             //    IAsyncCollector<UserProgram> userProgramOut,
             ILogger log, string username, string progId)
         {
+            List<Document> output = new List<Document>();
+
             log.LogInformation("Initializa a new user program");
 
-            List<Document> output = new List<Document>();
-            var userProgram = userPrograms.FirstOrDefault();
+            // Get the program details
+            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            var inputProgDetails = JsonConvert.DeserializeObject<UserProgramDetail>(requestBody);
 
-            if (userProgram != null)
+            // Get the active program for this user
+            Uri collectionUri = UriFactory.CreateDocumentCollectionUri("UserProgress", "UserPrograms");
+            IDocumentQuery<UserProgram> query = userProgsCient.CreateDocumentQuery<UserProgram>(collectionUri)
+                .Where(p => p.Username.Equals(username))
+                .Where(p => p.Status.Equals("active"))
+                .AsDocumentQuery();
+
+            while (query.HasMoreResults)
             {
-                // If the program has already been started let the caller know and don't continue
-                foreach (var program in userProgram.Programs)
+                foreach (Document doc in await query.ExecuteNextAsync())
                 {
-                    if (program.Id == progId)
+                    UserProgram userProgram = (dynamic)doc;
+                    
+                    // If the program has already been started let the caller know and don't continue
+                    foreach (var program in userProgram.Programs)
                     {
-                        return new ConflictObjectResult("Program already started");
-                    }
-                }
-
-                // Get the program details
-                string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-                var inputProgDetails = JsonConvert.DeserializeObject<UserProgramDetail>(requestBody);
-
-                // If the program hasn't started then you're here, update the active program list
-                userProgram.Programs.Add(new Program() { 
-                    Id = inputProgDetails.ProgId,
-                    Name = inputProgDetails.ProgName
-                });
-
-
-                Uri collectionUri = UriFactory.CreateDocumentCollectionUri("UserProgress", "UserPrograms");
-                IDocumentQuery<UserProgram> query = userProgsCient.CreateDocumentQuery<UserProgram>(collectionUri)
-                    .Where(p => p.Username.Equals(username))
-                    .Where(p => p.Status.Equals("active"))
-                    .AsDocumentQuery();
-
-                while (query.HasMoreResults)
-                {
-                    foreach (Document doc in await query.ExecuteNextAsync())
-                    {
-                        UserProgram replacement = (dynamic)doc;
-                        replacement.Programs.Add(new Program()
+                        if (program.Id == inputProgDetails.ProgId)
                         {
-                            Id = inputProgDetails.ProgId,
-                            Name = inputProgDetails.ProgName
-                        });
-                        output.Add(await userProgsCient.ReplaceDocumentAsync(doc.SelfLink, replacement));
-
+                            return new ConflictObjectResult("Program already started");
+                        }
                     }
+
+                    // If the program hasn't started then you're here, update the active program list
+                    userProgram.Programs.Add(new Program()
+                    {
+                        Id = inputProgDetails.ProgId,
+                        Name = inputProgDetails.ProgName
+                    });
+                    output.Add(await userProgsCient.ReplaceDocumentAsync(doc.SelfLink, userProgram));
                 }
-
-
             }
+
+
+
+
+            //var userProgram = userPrograms.FirstOrDefault();
+
+            //if (userProgram != null)
+            //{
+            //    // If the program has already been started let the caller know and don't continue
+            //    foreach (var program in userProgram.Programs)
+            //    {
+            //        if (program.Id == progId)
+            //        {
+            //            return new ConflictObjectResult("Program already started");
+            //        }
+            //    }
+
+                
+
+            //    // If the program hasn't started then you're here, update the active program list
+            //    userProgram.Programs.Add(new Program() { 
+            //        Id = inputProgDetails.ProgId,
+            //        Name = inputProgDetails.ProgName
+            //    });
+
+
+                
+
+
+            //}
 
 
 
