@@ -20,24 +20,17 @@ namespace UserProgress.Service
     {
         [FunctionName("InitializeUserProgram")]
         public static async Task<IActionResult> InitializeUserProgram(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "progress/program/{username}/{progId}")] HttpRequest req,
-            [CosmosDB(
-                databaseName: "UserProgress",
-                collectionName: "UserPrograms",
-                ConnectionStringSetting = "AzureWebJobsStorage",
-                PartitionKey = "{username}",
-                SqlQuery = "SELECT top 1 * FROM c where c.status = 'active'")]
-                IEnumerable<UserProgram> userPrograms,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "progress/program")] HttpRequest req,
             [CosmosDB(
                 databaseName: "UserProgress",
                 collectionName: "UserPrograms",
                 ConnectionStringSetting = "AzureWebJobsStorage")] DocumentClient userProgsCient,
-            //[CosmosDB(
-            //    databaseName: "UserProgress",
-            //    collectionName: "UserPrograms",
-            //    ConnectionStringSetting = "AzureWebJobsStorage")]
-            //    IAsyncCollector<UserProgram> userProgramOut,
-            ILogger log, string username, string progId)
+            [CosmosDB(
+                databaseName: "UserProgress",
+                collectionName: "UserProgramDetails",
+                ConnectionStringSetting = "AzureWebJobsStorage")]
+                IAsyncCollector<UserProgramDetail> userProgDetsOut,
+            ILogger log)
         {
             List<Document> output = new List<Document>();
 
@@ -50,71 +43,44 @@ namespace UserProgress.Service
             // Get the active program for this user
             Uri collectionUri = UriFactory.CreateDocumentCollectionUri("UserProgress", "UserPrograms");
             IDocumentQuery<UserProgram> query = userProgsCient.CreateDocumentQuery<UserProgram>(collectionUri)
-                .Where(p => p.Username.Equals(username))
+                .Where(p => p.Username.Equals(inputProgDetails.Username))
                 .Where(p => p.Status.Equals("active"))
                 .AsDocumentQuery();
 
-            while (query.HasMoreResults)
+            try
             {
-                foreach (Document doc in await query.ExecuteNextAsync())
+                while (query.HasMoreResults)
                 {
-                    UserProgram userProgram = (dynamic)doc;
+                    foreach (Document doc in await query.ExecuteNextAsync())
+                    {
+                        UserProgram userProgram = (dynamic)doc;
                     
-                    // If the program has already been started let the caller know and don't continue
-                    foreach (var program in userProgram.Programs)
-                    {
-                        if (program.Id == inputProgDetails.ProgId)
+                        // If the program has already been started let the caller know and don't continue
+                        foreach (var program in userProgram.Programs)
                         {
-                            return new ConflictObjectResult("Program already started");
+                            if (program.Id == inputProgDetails.ProgId)
+                            {
+                                return new ConflictObjectResult("Program already started");
+                            }
                         }
-                    }
 
-                    // If the program hasn't started then you're here, update the active program list
-                    userProgram.Programs.Add(new Program()
-                    {
-                        Id = inputProgDetails.ProgId,
-                        Name = inputProgDetails.ProgName
-                    });
-                    output.Add(await userProgsCient.ReplaceDocumentAsync(doc.SelfLink, userProgram));
+                        // If the program hasn't started then you're here, update the active program list
+                        userProgram.Programs.Add(new Program()
+                        {
+                            Id = inputProgDetails.ProgId,
+                            Name = inputProgDetails.ProgName
+                        });
+                        output.Add(await userProgsCient.ReplaceDocumentAsync(doc.SelfLink, userProgram));
+
+                        // Create the framework in the program details container
+                        await userProgDetsOut.AddAsync(inputProgDetails);
+                    }
                 }
             }
-
-
-
-
-            //var userProgram = userPrograms.FirstOrDefault();
-
-            //if (userProgram != null)
-            //{
-            //    // If the program has already been started let the caller know and don't continue
-            //    foreach (var program in userProgram.Programs)
-            //    {
-            //        if (program.Id == progId)
-            //        {
-            //            return new ConflictObjectResult("Program already started");
-            //        }
-            //    }
-
-                
-
-            //    // If the program hasn't started then you're here, update the active program list
-            //    userProgram.Programs.Add(new Program() { 
-            //        Id = inputProgDetails.ProgId,
-            //        Name = inputProgDetails.ProgName
-            //    });
-
-
-                
-
-
-            //}
-
-
-
-
-
-            // Create the framework in the program details container
-
+            catch (Exception e)
+            {
+                return new BadRequestResult();
+            }
 
             return new OkObjectResult(output);
         }
@@ -148,7 +114,7 @@ namespace UserProgress.Service
             }
             catch (Exception e)
             {
-                return new NotFoundResult();
+                return new BadRequestResult();
             }
             return new OkObjectResult(userprogram);
         }
