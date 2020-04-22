@@ -38,7 +38,7 @@ namespace UserProgress.Service
 
             // Get the program details
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            var inputProgDetails = JsonConvert.DeserializeObject<UserProgramDetail>(requestBody);
+            var inputProgDetails = JsonConvert.DeserializeObject<UserProgramDetailCreateModel>(requestBody);
 
             // Get the active program for this user
             Uri collectionUri = UriFactory.CreateDocumentCollectionUri("UserProgress", "UserPrograms");
@@ -72,8 +72,18 @@ namespace UserProgress.Service
                         });
                         output.Add(await userProgsCient.ReplaceDocumentAsync(doc.SelfLink, userProgram));
 
+                        // Map the create model to the database required model
+                        var progDetail = new UserProgramDetail()
+                        {
+                            Username = inputProgDetails.Username,
+                            ProgId = inputProgDetails.ProgId,
+                            ProgName = inputProgDetails.ProgName,
+                            TotalDays = inputProgDetails.TotalDays,
+                            Exersices = inputProgDetails.Exersices
+                        };
+
                         // Create the framework in the program details container
-                        await userProgDetsOut.AddAsync(inputProgDetails);
+                        await userProgDetsOut.AddAsync(progDetail);
                     }
                 }
             }
@@ -85,9 +95,80 @@ namespace UserProgress.Service
             return new OkObjectResult(output);
         }
 
+        [FunctionName("StartTodaysWorkout")]
+        public static async Task<IActionResult> StartTodaysWorkout(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "progress/program/start")] HttpRequest req,
+            [CosmosDB(
+                databaseName: "UserProgress",
+                collectionName: "UserProgramDetails",
+                ConnectionStringSetting = "AzureWebJobsStorage")] DocumentClient client,
+            ILogger log)
+        {
+            log.LogInformation("Starting today's program");
+
+            // Get the active program for this user
+            Uri collectionUri = UriFactory.CreateDocumentCollectionUri("UserProgress", "UserProgramDetails");
+            IDocumentQuery<UserProgramDetail> query = client.CreateDocumentQuery<UserProgramDetail>(collectionUri)
+                .Where(p => p.Id.Equals(req.Query["id"]))
+                .Where(p => p.Username.Equals(req.Query["username"]))
+                .AsDocumentQuery();
+
+            try
+            {
+                while (query.HasMoreResults)
+                {
+                    //Document d = query.ExecuteNextAsync().Result.FirstOrDefault();
+                    foreach (Document doc in await query.ExecuteNextAsync())
+                    {
+                        UserProgramDetail userProgDetail = (dynamic)doc;
+
+                        // Update the day number count
+                        userProgDetail.DayNo++;
+                        await client.ReplaceDocumentAsync(doc.SelfLink, userProgDetail);
+
+                        // Return the details used to build todays workout
+                        return new OkObjectResult(userProgDetail);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                return new BadRequestResult();
+            }
+
+            return new BadRequestObjectResult("Program detail wasn't able to update");
+        }
+
+        [FunctionName("AddUserWorkoutSet")]
+        public static async Task<IActionResult> AddUserWorkoutSet(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "progress/program/workoutset")] HttpRequest req,
+            [CosmosDB(
+                databaseName: "UserProgress",
+                collectionName: "WorkoutSets",
+                ConnectionStringSetting = "AzureWebJobsStorage")]
+                IAsyncCollector<WorkoutSet> workoutSet,
+            ILogger log)
+        {
+            log.LogInformation("Add a new workout set logging the users workout progress");
+
+            // Read the request body
+            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            var input = JsonConvert.DeserializeObject<WorkoutSet>(requestBody);
+
+            try
+            {
+                await workoutSet.AddAsync(input);
+            }
+            catch (Exception e)
+            {
+                return new BadRequestResult();
+            }
+            return new OkObjectResult(input);
+        }
+
         [FunctionName("CreateUserProgramListing")]
         public static async Task<IActionResult> CreateUserProgramListing(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "progress/listing")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "progress/program/listing")] HttpRequest req,
             [CosmosDB(
                 databaseName: "UserProgress",
                 collectionName: "UserPrograms",

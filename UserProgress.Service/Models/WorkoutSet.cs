@@ -37,12 +37,12 @@ namespace UserProgress.Service.Models
         public int SetNo { get; set; }
 
         [JsonProperty(PropertyName = "repsCompleted")]
-        public int RepsCompleted { get; set; }
+        public int RepsCompleted { get; set; } = 0;
 
-        [JsonProperty(PropertyName = "weightUsed")]
-        public int WeightUsed { get; set; }
+        [JsonProperty(PropertyName = "weightUsedLbs")]
+        public int WeightUsedLbs { get; set; } = 0;
 
         [JsonProperty(PropertyName = "skipped")]
-        public bool Skipped { get; set; }
+        public bool Skipped { get; set; } = false;
     }
 }
