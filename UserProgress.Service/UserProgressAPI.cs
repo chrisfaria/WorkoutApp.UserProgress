@@ -141,7 +141,7 @@ namespace UserProgress.Service
 
         [FunctionName("AddUserWorkoutSet")]
         public static async Task<IActionResult> AddUserWorkoutSet(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "progress/program/workoutset")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "progress/program/workoutset")] HttpRequest req,
             [CosmosDB(
                 databaseName: "UserProgress",
                 collectionName: "WorkoutSets",
